@@ -1,12 +1,4 @@
 ##################################################################################
-# PROVIDERS
-##################################################################################
-
-provider "aws" {
-  region     = "us-east-1"
-}
-
-##################################################################################
 # DATA
 ##################################################################################
 
@@ -80,10 +72,11 @@ resource "aws_security_group" "nginx-sg" {
 
   # HTTP access from anywhere
   ingress {
-    from_port = 80
-    to_port    = 80
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
-    cidr_blocks      = var.vpc_subnets_cidr_blocks
+#    cidr_blocks = var.vpc_subnets_cidr_blocks
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # outbound internet access
@@ -119,4 +112,16 @@ resource "aws_security_group" "alb-sg" {
   }
 
   tags = local.common_tags
+}
+
+resource "aws_security_group_rule" "nginx-ssh" {
+  depends_on = [
+    aws_security_group.nginx-sg
+  ]
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.nginx-sg.id
 }
