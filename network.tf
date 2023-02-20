@@ -28,7 +28,7 @@ resource "aws_subnet" "subnet1" {
   cidr_block              = var.vpc_subnets_cidr_blocks[0]
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = true
-  availability_zone  =  data.aws_availability_zones.available.names[0]
+  availability_zone       = data.aws_availability_zones.available.names[0]
 
   tags = local.common_tags
 }
@@ -37,7 +37,7 @@ resource "aws_subnet" "subnet2" {
   cidr_block              = var.vpc_subnets_cidr_blocks[1]
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = true
-  availability_zone  =  data.aws_availability_zones.available.names[1]
+  availability_zone       = data.aws_availability_zones.available.names[1]
 
   tags = local.common_tags
 }
@@ -72,10 +72,10 @@ resource "aws_security_group" "nginx-sg" {
 
   # HTTP access from anywhere
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-#    cidr_blocks = var.vpc_subnets_cidr_blocks
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    #    cidr_blocks = var.vpc_subnets_cidr_blocks
     cidr_blocks = ["0.0.0.0/0"]
   }
 

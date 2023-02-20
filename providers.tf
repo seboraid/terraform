@@ -8,7 +8,7 @@ terraform {
     }
 
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
       version = "3.4.3"
     }
   }
@@ -19,7 +19,7 @@ terraform {
 ##################################################################################
 
 provider "aws" {
-  region     = "us-east-1"
+  region = "us-east-1"
 }
 
 provider "random" {
