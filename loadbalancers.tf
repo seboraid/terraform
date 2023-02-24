@@ -8,7 +8,7 @@ resource "aws_lb" "nginx" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb-sg.id]
-  subnets            = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
+  subnets            = aws_subnet.subnets[*].id
 
   enable_deletion_protection = false
 
@@ -18,13 +18,17 @@ resource "aws_lb" "nginx" {
     enabled = true
   }
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-alb-logs"
+  })
 }
 
 ## aws_lb_target_group
 
 resource "aws_lb_target_group" "nginx" {
-  name     = "globo-web-alb-tg"
+  name     = "${local.name_prefix}-alb-tg-nginx"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.vpc.id
@@ -39,7 +43,11 @@ resource "aws_lb_target_group" "nginx" {
     unhealthy_threshold = 2
   }
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-alb-tg-nginx"
+  })
 }
 
 ## aws_lb_listener
@@ -53,20 +61,19 @@ resource "aws_lb_listener" "nginx" {
     target_group_arn = aws_lb_target_group.nginx.arn
   }
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-alb-listener-nginx"
+  })
 }
 
 
 ## aws_lb_target_group_attachment
 
-resource "aws_lb_target_group_attachment" "nginx1" {
+resource "aws_lb_target_group_attachment" "nginx-servers" {
+  count            = var.instances_nginx_servers_count
   target_group_arn = aws_lb_target_group.nginx.arn
-  target_id        = aws_instance.nginx1.id
-  port             = 80
-}
-
-resource "aws_lb_target_group_attachment" "nginx2" {
-  target_group_arn = aws_lb_target_group.nginx.arn
-  target_id        = aws_instance.nginx2.id
+  target_id        = aws_instance.instance_nginx_servers[count.index].id
   port             = 80
 }

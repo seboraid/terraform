@@ -27,7 +27,11 @@ data "aws_iam_policy_document" "allow_access_to_s3_from_elb" {
 ## aws_s3_bucket
 resource "aws_s3_bucket" "bucket" {
   bucket = local.s3_bucket_name
-  tags   = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-s3-bucket"
+  })
 }
 
 ## aws_s3_bucket_acl
@@ -45,26 +49,29 @@ resource "aws_s3_bucket_policy" "allow_access_to_s3_from_elb" {
 }
 
 ## aws_s3_object
-resource "aws_s3_object" "website_index" {
-  bucket = aws_s3_bucket.bucket.id
-  key    = "website/index.html"
-  source = "website/index.html"
+resource "aws_s3_object" "website_resources" {
 
-  tags = local.common_tags
-}
+  for_each = {
+    index = "website/index.html"
+    logo  = "website/Globo_logo_Vert.png"
+  }
 
-resource "aws_s3_object" "website_logo" {
-  bucket = aws_s3_bucket.bucket.id
-  key    = "website/Globo_logo_Vert.png"
-  source = "website/Globo_logo_Vert.png"
+  bucket        = aws_s3_bucket.bucket.id
+  key           = each.value
+  source        = each.value
+  force_destroy = true
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-s3-object-website"
+  })
 }
 
 ## aws_iam_role
 
 resource "aws_iam_role" "allow_nginx_s3" {
-  name               = "s3-access-role"
+  name               = "${local.name_prefix}-s3-access-role"
   assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -81,13 +88,17 @@ resource "aws_iam_role" "allow_nginx_s3" {
   
 }
 EOF
-  tags               = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-s3-access-role"
+  })
 }
 
 ## aws_iam_role_policy
 
 resource "aws_iam_role_policy" "allow_s3_all" {
-  name   = "allow_s3_all"
+  name   = "${local.name_prefix}-iam-role-policy-allow_s3_all"
   role   = aws_iam_role.allow_nginx_s3.id
   policy = <<EOF
 {
@@ -112,8 +123,12 @@ EOF
 ## aws_iam_instance_profile
 
 resource "aws_iam_instance_profile" "nginx-profile" {
-  name = "nginx-profile"
+  name = "${local.name_prefix}-iam-instance-profile-nginx-profile"
   role = aws_iam_role.allow_nginx_s3.name
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-iam-instance-profile-nginx-profile"
+  })
 }

@@ -12,34 +12,39 @@ data "aws_availability_zones" "available" {
 
 # NETWORKING #
 resource "aws_vpc" "vpc" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr_block
   enable_dns_hostnames = true
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-vpc"
+  })
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-igw"
+  })
 }
 
-resource "aws_subnet" "subnet1" {
-  cidr_block              = var.vpc_subnets_cidr_blocks[0]
+resource "aws_subnet" "subnets" {
+  count = var.vpc_subnet_count
+
+  cidr_block              = cidrsubnet(var.vpc_cidr_block, 8, count.index)
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = true
-  availability_zone       = data.aws_availability_zones.available.names[0]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
 
-  tags = local.common_tags
-}
-
-resource "aws_subnet" "subnet2" {
-  cidr_block              = var.vpc_subnets_cidr_blocks[1]
-  vpc_id                  = aws_vpc.vpc.id
-  map_public_ip_on_launch = true
-  availability_zone       = data.aws_availability_zones.available.names[1]
-
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-subnet-${count.index + 1}"
+  })
 }
 
 # ROUTING #
@@ -51,77 +56,85 @@ resource "aws_route_table" "rtb" {
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-rtb"
+  })
 }
 
-resource "aws_route_table_association" "rta-subnet1" {
-  subnet_id      = aws_subnet.subnet1.id
-  route_table_id = aws_route_table.rtb.id
-}
-
-resource "aws_route_table_association" "rta-subnet2" {
-  subnet_id      = aws_subnet.subnet2.id
+resource "aws_route_table_association" "rta-subnets" {
+  count          = var.vpc_subnet_count
+  subnet_id      = aws_subnet.subnets[count.index].id
   route_table_id = aws_route_table.rtb.id
 }
 
 # SECURITY GROUPS #
 # Nginx security group 
 resource "aws_security_group" "nginx-sg" {
-  name   = "nginx_sg"
+  name   = "${local.name_prefix}-sg-nginx"
   vpc_id = aws_vpc.vpc.id
 
-  # HTTP access from anywhere
-  ingress {
-    from_port = 80
-    to_port   = 80
-    protocol  = "tcp"
-    #    cidr_blocks = var.vpc_subnets_cidr_blocks
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # outbound internet access
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-sg-nginx"
+  })
 }
 
 # ALB security group 
 resource "aws_security_group" "alb-sg" {
-  name   = "nginx_alb_sg"
+  name   = "${local.name_prefix}-sg-alb"
   vpc_id = aws_vpc.vpc.id
 
-  # HTTP access from anywhere
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-sg-alb"
+  })
+}
 
-  # outbound internet access
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = local.common_tags
+resource "aws_security_group_rule" "nginx-www" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.nginx-sg.id
 }
 
 resource "aws_security_group_rule" "nginx-ssh" {
-  depends_on = [
-    aws_security_group.nginx-sg
-  ]
   type              = "ingress"
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.nginx-sg.id
+}
+
+resource "aws_security_group_rule" "nginx-egress" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.nginx-sg.id
+}
+
+resource "aws_security_group_rule" "alb-www" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.alb-sg.id
+}
+
+resource "aws_security_group_rule" "alb-egress" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.alb-sg.id
 }
