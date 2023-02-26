@@ -8,12 +8,12 @@ resource "aws_lb" "nginx" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb-sg.id]
-  subnets            = aws_subnet.subnets[*].id
+  subnets            = module.vpc.public_subnets
 
   enable_deletion_protection = false
 
   access_logs {
-    bucket  = aws_s3_bucket.bucket.bucket
+    bucket  = module.s3mio.bucket.bucket
     prefix  = "alb-logs"
     enabled = true
   }
@@ -21,17 +21,17 @@ resource "aws_lb" "nginx" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-alb-logs"
+      Name = "${local.name_prefix}alb-logs"
   })
 }
 
 ## aws_lb_target_group
 
 resource "aws_lb_target_group" "nginx" {
-  name     = "${local.name_prefix}-alb-tg-nginx"
+  name     = "${local.name_prefix}alb-tg-nginx"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = aws_vpc.vpc.id
+  vpc_id   = module.vpc.vpc_id
 
   health_check {
     healthy_threshold   = 2
@@ -46,7 +46,7 @@ resource "aws_lb_target_group" "nginx" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-alb-tg-nginx"
+      Name = "${local.name_prefix}alb-tg-nginx"
   })
 }
 
@@ -64,7 +64,7 @@ resource "aws_lb_listener" "nginx" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-alb-listener-nginx"
+      Name = "${local.name_prefix}alb-listener-nginx"
   })
 }
 
