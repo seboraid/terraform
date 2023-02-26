@@ -16,10 +16,10 @@ module "vpc" {
   version = "=3.19.0"
 
   name = "${local.name_prefix}vpc"
-  cidr = var.vpc_cidr_block
+  cidr = var.vpc_cidr_block[terraform.workspace]
 
-  azs            = slice(data.aws_availability_zones.available.names, 0, var.vpc_subnet_count)
-  public_subnets = [for subnet in range(var.vpc_subnet_count) : cidrsubnet(var.vpc_cidr_block, 8, subnet)]
+  azs            = slice(data.aws_availability_zones.available.names, 0, var.vpc_subnet_count[terraform.workspace])
+  public_subnets = [for subnet in range(var.vpc_subnet_count[terraform.workspace]) : cidrsubnet(var.vpc_cidr_block[terraform.workspace], 8, subnet)]
 
   enable_nat_gateway = false
   enable_vpn_gateway = false

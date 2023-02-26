@@ -1,12 +1,11 @@
 variable "naming_prefix" {
   type        = string
   description = "Prefix for naming resources"
-  default     = "globoweb"
+  default     = "globowebsite"
 }
 variable "vpc_cidr_block" {
-  type        = string
+  type        = map(string)
   description = "CIDR Blocks for vpc"
-  default     = "10.0.0.0/16"
 }
 variable "vpc_subnets_cidr_blocks" {
   type        = list(string)
@@ -15,21 +14,18 @@ variable "vpc_subnets_cidr_blocks" {
 }
 
 variable "vpc_subnet_count" {
-  type        = number
+  type        = map(number)
   description = "Number of subnets to create"
-  default     = 2
 }
 
 variable "instance_type" {
-  type        = string
+  type        = map(string)
   description = "value for dos"
-  default     = "t4g.micro"
 }
 
 variable "instances_nginx_servers_count" {
-  type        = number
+  type        = map(number)
   description = "Number of subnets to create"
-  default     = 2
 }
 
 variable "instance_ami" {

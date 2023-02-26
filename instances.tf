@@ -9,11 +9,11 @@ resource "aws_instance" "instance_nginx_servers" {
     module.s3mio
   ]
 
-  count = var.instances_nginx_servers_count
+  count = var.instances_nginx_servers_count[terraform.workspace]
 
   ami                    = nonsensitive(data.aws_ssm_parameter.ami.value)
-  instance_type          = var.instance_type
-  subnet_id              = module.vpc.public_subnets[(count.index % var.vpc_subnet_count)]
+  instance_type          = var.instance_type[terraform.workspace]
+  subnet_id              = module.vpc.public_subnets[(count.index % var.vpc_subnet_count[terraform.workspace])]
   vpc_security_group_ids = [aws_security_group.nginx-sg.id]
   iam_instance_profile   = module.s3mio.aws_iam_instance_profile.name
 

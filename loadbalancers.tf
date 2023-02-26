@@ -4,7 +4,7 @@ data "aws_elb_service_account" "root" {}
 
 ## aws_lb
 resource "aws_lb" "nginx" {
-  name               = "globo-web-alb"
+  name               = "${local.name_prefix}web-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb-sg.id]
@@ -72,7 +72,7 @@ resource "aws_lb_listener" "nginx" {
 ## aws_lb_target_group_attachment
 
 resource "aws_lb_target_group_attachment" "nginx-servers" {
-  count            = var.instances_nginx_servers_count
+  count            = var.instances_nginx_servers_count[terraform.workspace]
   target_group_arn = aws_lb_target_group.nginx.arn
   target_id        = aws_instance.instance_nginx_servers[count.index].id
   port             = 80
