@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "allow_access_to_s3_from_elb" {
 
 ## aws_s3_bucket
 resource "aws_s3_bucket" "bucket" {
-  bucket = var.bucket_name
+  bucket        = var.bucket_name
   force_destroy = true
   tags = merge(
     var.common_tags,

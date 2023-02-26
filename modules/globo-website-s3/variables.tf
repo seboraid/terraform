@@ -14,11 +14,11 @@ variable "elb_service_account_arn" {
 variable "common_tags" {
   type        = map(string)
   description = "Common tags"
-  default = {}
+  default     = {}
 }
 
 variable "name_prefix" {
   type        = string
   description = "Name prefix"
-  default = ""
+  default     = ""
 }
